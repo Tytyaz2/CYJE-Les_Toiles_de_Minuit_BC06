@@ -104,6 +104,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->events;
     }
 
+    #[\Deprecated]
     public function eraseCredentials(): void
     {
     }

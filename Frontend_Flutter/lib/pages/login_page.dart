@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,29 +14,38 @@ class _LoginPageState extends State<LoginPage> {
   final passwordController = TextEditingController();
   bool isLoading = false;
 
-  Future<void> _login() async {
-    setState(() => isLoading = true);
+  // Pour inscription
+  final regNameController = TextEditingController();
+  final regEmailController = TextEditingController();
+  final regPasswordController = TextEditingController();
+  String? regRole;
 
+  final emailRegex = RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$");
+
+  Future<void> _login() async {
     final email = emailController.text.trim();
     final password = passwordController.text;
+
+    if (email.isEmpty || !emailRegex.hasMatch(email)) {
+      _showError('Veuillez saisir un email valide.');
+      return;
+    }
+
+    setState(() => isLoading = true);
 
     try {
       final token = await ApiService.login(email, password);
 
       if (token != null) {
-        // Stocker le token via AuthService
         await AuthService.saveToken(token);
-
-        // Récupérer le rôle via AuthService
         final role = await AuthService.getRole();
 
-        // Rediriger selon rôle
         if (role == 'ROLE_ADMIN') {
           Navigator.pushReplacementNamed(context, '/admin_dashboard');
         } else if (role == 'ROLE_ORGANIZER') {
           Navigator.pushReplacementNamed(context, '/organizer_dashboard');
         } else {
-          Navigator.pushReplacementNamed(context, '/events'); // user normal
+          Navigator.pushReplacementNamed(context, '/events');
         }
       } else {
         _showError('Token manquant dans la réponse');
@@ -58,10 +66,122 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
+
+  void _showRegisterDialog() {
+    regNameController.clear();
+    regEmailController.clear();
+    regPasswordController.clear();
+    regRole = null;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Inscription'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Choisissez votre rôle:'),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: regRole,
+              items: const [
+                DropdownMenuItem(value: 'ROLE_USER', child: Text('Utilisateur')),
+                DropdownMenuItem(value: 'ROLE_ORGANIZER', child: Text('Organisateur')),
+              ],
+              onChanged: (val) => setState(() => regRole = val),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+              hint: const Text('Sélectionner un rôle'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: regNameController,
+              decoration: const InputDecoration(
+                labelText: 'Nom',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: regEmailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(
+                labelText: 'Email',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: regPasswordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Mot de passe',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            child: const Text('Annuler'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          ElevatedButton(
+            child: const Text('S\'inscrire'),
+            onPressed: () async {
+              final name = regNameController.text.trim();
+              final email = regEmailController.text.trim();
+              final password = regPasswordController.text;
+
+              if (regRole == null || name.isEmpty || email.isEmpty || password.isEmpty) {
+                _showError('Veuillez remplir tous les champs et choisir un rôle.');
+                return;
+              }
+
+              if (!emailRegex.hasMatch(email)) {
+                _showError('Email invalide.');
+                return;
+              }
+
+              if (password.length < 6) {
+                _showError('Le mot de passe doit contenir au moins 6 caractères.');
+                return;
+              }
+
+              try {
+                final success = await ApiService.registerUser(
+                  email: email,
+                  password: password,
+                  name: name,
+                  isOrganizer: regRole == 'ROLE_ORGANIZER',
+                );
+                if (success) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Inscription réussie !')),
+                  );
+                } else {
+                  _showError('Échec de l\'inscription');
+                }
+              } catch (e) {
+                _showError('Erreur lors de l\'inscription : $e');
+              } finally {
+                if (mounted) setState(() => isLoading = false);
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Inchangé, tout le reste reste identique
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6), // fond clair doux
+      backgroundColor: const Color(0xFFF3F4F6),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -132,6 +252,14 @@ class _LoginPageState extends State<LoginPage> {
                           letterSpacing: 1.1,
                         ),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: _showRegisterDialog,
+                    child: const Text(
+                      "Pas encore de compte ? S'inscrire",
+                      style: TextStyle(color: Colors.deepPurple),
                     ),
                   ),
                 ],

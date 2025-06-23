@@ -120,11 +120,9 @@ class ApiService {
       if (maxCapacity != null) 'maxCapacity': maxCapacity,
     };
 
-    // Si imageName est défini, construit l'url de l'image sans id car on ne connaît pas encore l'id avant création.
-    // Dans ce cas, on peut juste envoyer le nom ou null (selon backend).
-    // Souvent, on upload l'image à part, puis on met à jour l'événement avec l'id + image.
+
     if (imageName != null && imageName.isNotEmpty) {
-      // On met juste le nom, le backend doit gérer l'association image/id
+
       body['image'] = imageName;
     }
 
@@ -285,6 +283,38 @@ class ApiService {
       throw Exception('Non autorisé');
     } else {
       throw Exception('Erreur lors de la désinscription : ${response.body}');
+    }
+  }
+
+  //register user
+  static Future<bool> registerUser({
+    required String email,
+    required String password,
+    required String name,
+    required bool isOrganizer, // nouveau champ pour rôle
+  }) async {
+    final url = Uri.parse('$baseUrl/users/register');
+
+    final role = isOrganizer ? 'ROLE_ORGANIZER' : 'ROLE_USER';
+
+    final body = jsonEncode({
+      'email': email,
+      'password': password,
+      'name': name,
+      'role': role, // à voir si backend accepte ce champ ou gérer côté backend
+    });
+
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: body,
+    );
+
+    if (response.statusCode == 201) {
+      return true;
+    } else {
+      // optionnel : parser message d'erreur du backend
+      return false;
     }
   }
 }

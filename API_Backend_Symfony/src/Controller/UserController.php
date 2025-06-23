@@ -21,11 +21,12 @@ class UserController extends AbstractController
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
-                required: ['email', 'password', 'name'],
+                required: ['email', 'password', 'name', 'role'],
                 properties: [
                     new OA\Property(property: 'email', type: 'string', format: 'email'),
                     new OA\Property(property: 'password', type: 'string', format: 'password'),
                     new OA\Property(property: 'name', type: 'string'),
+                    new OA\Property(property: 'role', type: 'string', enum: ['ROLE_USER', 'ROLE_ORGANIZER']), // nouveau champ
                 ]
             )
         ),
@@ -42,14 +43,20 @@ class UserController extends AbstractController
     ): JsonResponse {
         $data = json_decode($request->getContent(), true);
 
-        if (empty($data['email']) || empty($data['password']) || empty($data['name'])) {
+        if (empty($data['email']) || empty($data['password']) || empty($data['name']) || empty($data['role'])) {
             return $this->json(['error' => 'Missing data'], 400);
+        }
+
+        // Valider le rôle
+        $validRoles = ['ROLE_USER', 'ROLE_ORGANIZER'];
+        if (!in_array($data['role'], $validRoles, true)) {
+            return $this->json(['error' => 'Invalid role'], 400);
         }
 
         $user = new User();
         $user->setEmail($data['email']);
         $user->setName($data['name']);
-        $user->setRoles(['ROLE_USER']);
+        $user->setRoles([$data['role']]);
         $user->setPassword($passwordHasher->hashPassword($user, $data['password']));
 
         $em->persist($user);
@@ -57,6 +64,7 @@ class UserController extends AbstractController
 
         return $this->json(['message' => 'User registered successfully'], 201);
     }
+
 
     #[OA\Post(
         summary: 'User login to get JWT token',

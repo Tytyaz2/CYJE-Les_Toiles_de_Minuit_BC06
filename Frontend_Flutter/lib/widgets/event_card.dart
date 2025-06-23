@@ -20,6 +20,8 @@ class EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('Event ID: ${event.id}, Image: ${event.image}, MaxCapacity: ${event.maxCapacity}');
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.all(6),
@@ -43,6 +45,7 @@ class EventCard extends StatelessWidget {
                 ),
               ),
             ),
+
 
             // Image compacte (carré)
             if (event.image != null && event.image!.isNotEmpty)

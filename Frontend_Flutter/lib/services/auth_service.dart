@@ -4,25 +4,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AuthService {
   static const _tokenKey = 'jwt';
 
-  // Sauvegarder le token JWT
   static Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
   }
 
-  // Lire le token JWT
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_tokenKey);
   }
 
-  // Supprimer le token
   static Future<void> clearToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
   }
 
-  // Décoder payload du JWT
+  static Future<void> logout() async {
+    await clearToken();
+  }
+
   static Map<String, dynamic>? _decodePayload(String token) {
     try {
       final parts = token.split('.');

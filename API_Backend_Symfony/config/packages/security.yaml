@@ -42,6 +42,7 @@ security:
 
         # ✅ Autoriser le login à tout le monde
         - { path: ^/api/users/login, roles: PUBLIC_ACCESS }
+        - { path: ^/api/users/register, roles: PUBLIC_ACCESS }
 
         # ✅ Exemple : endpoints admin (tout sous /api/admin)
         - { path: ^/api/admin, roles: ROLE_ADMIN }

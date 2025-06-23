@@ -130,42 +130,111 @@ class _EventsPageState extends State<EventsPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(showRegistered ? 'Mes Inscriptions' : 'Événements disponibles'),
-        backgroundColor: Colors.deepPurple,
-        actions: [
-          TextButton(
-            onPressed: _toggleView,
-            child: Text(
-              showRegistered ? 'Voir disponibles' : 'Voir mes inscriptions',
-              style: const TextStyle(color: Colors.white),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(65),
+        child: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 2,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(
+              bottom: Radius.circular(20),
             ),
           ),
-        ],
+          title: Text(
+            showRegistered ? 'Mes Inscriptions' : 'Événements Disponibles',
+            style: const TextStyle(
+              color: Colors.black87,
+              fontWeight: FontWeight.w600,
+              fontSize: 22,
+            ),
+          ),
+          centerTitle: true,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: OutlinedButton.icon(
+                onPressed: _toggleView,
+                icon: Icon(
+                  showRegistered ? Icons.event_available : Icons.event_note,
+                  color: Colors.deepPurple,
+                ),
+                label: Text(
+                  showRegistered ? 'Disponibles' : 'Mes Inscriptions',
+                  style: const TextStyle(color: Colors.deepPurple),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.deepPurple),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: CircleAvatar(
+                backgroundColor: Colors.deepPurple.withOpacity(0.1),
+                child: IconButton(
+                  icon: const Icon(Icons.logout, color: Colors.deepPurple),
+                  tooltip: 'Déconnexion',
+                  onPressed: () async {
+                    await AuthService.clearToken();
+                    Navigator.of(context).pushReplacementNamed('/login');
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
+
       body: _displayedEvents.isEmpty
           ? const Center(child: Text('Aucun événement à afficher.'))
-          : Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: GridView.builder(
-          itemCount: _displayedEvents.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 5,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 0.70,
-          ),
-          itemBuilder: (context, index) {
-            final event = _displayedEvents[index];
-            return EventCard(
-              event: event,
-              onPressed: () => _onEventPressed(event),
-              onRegister: () => _onRegister(event),
-              onUnregister: () => _onUnregister(event),
-              isRegistered: showRegistered,
-            );
-          },
-        ),
+          : LayoutBuilder(
+        builder: (context, constraints) {
+          double screenWidth = constraints.maxWidth;
+
+          // Largeur cible approximative pour une carte
+          const cardWidth = 160;
+
+          // Hauteur cible approximative pour une carte (peut être modifiée)
+          const cardHeight = 230;
+
+          // Calcul du nombre de colonnes selon la largeur disponible
+          int crossAxisCount = (screenWidth / cardWidth).floor();
+
+          // Clamp pour avoir au moins 1 colonne et au plus 5 (modifiable)
+          crossAxisCount = crossAxisCount.clamp(1, 5);
+
+          // Calcul du ratio largeur/hauteur dynamique
+          // Ratio = largeur / hauteur
+          // On adapte en fonction de la taille de l'écran pour garder un aspect harmonieux
+          double childAspectRatio = cardWidth *0.8 / cardHeight;
+
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: GridView.builder(
+              itemCount: _displayedEvents.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                childAspectRatio: childAspectRatio,
+              ),
+              itemBuilder: (context, index) {
+                final event = _displayedEvents[index];
+                return EventCard(
+                  event: event,
+                  onPressed: () => _onEventPressed(event),
+                  onRegister: () => _onRegister(event),
+                  onUnregister: () => _onUnregister(event),
+                  isRegistered: showRegistered,
+                );
+              },
+            ),
+          );
+        },
       ),
     );
   }
