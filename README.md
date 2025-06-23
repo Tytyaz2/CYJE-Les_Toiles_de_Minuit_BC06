@@ -69,7 +69,7 @@ php bin/console doctrine:fixtures:load
 ```bash
 cd Frontend_Flutter
 flutter pub get
-flutter run
+flutter run -d chrome
 ```
 
 # ✅ Stack
